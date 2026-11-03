@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="國小四年級月亮觀測教學，搭配 OpenCode 與本地模型 Flint40B、Beam 的完整入門教材。單一離線 HTML，圖片全內嵌。">
+<title>國小四年級月亮觀測教學 × OpenCode 本地模型（Flint40B ＋ Beam）</title>
+<style>
+  :root{
+    --ink:#0f172a; --muted:#475569; --line:#e2e8f0;
+    --blue:#2f6fed; --blue-soft:#eef4ff;
+    --green:#16a34a; --green-soft:#f0fdf4;
+    --amber:#d97706; --amber-soft:#fff7e6;
+    --orange:#ea580c; --purple:#7c4dbe;
+    --bg:#f4f6fb; --card:#ffffff;
+    --code-bg:#0f172a; --code-ink:#e2e8f0;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei","Noto Sans TC","Helvetica Neue",Arial,sans-serif;
+    line-height:1.85; font-size:16px;
+  }
+  .wrap{max-width:1000px; margin:0 auto; padding:0 20px}
+
+  /* ---------- Hero ---------- */
+  header.hero{background:linear-gradient(180deg,#0b1020 0%,#141d38 100%); color:#e6edf7; padding:36px 0 30px; border-bottom:4px solid var(--blue)}
+  .hero h1{font-size:30px; line-height:1.4; margin:18px 0 6px; letter-spacing:.5px}
+  .hero .sub{color:#a9bcd9; font-size:16px; margin:0 0 14px}
+  .badges{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px}
+  .badge{display:inline-block; padding:3px 12px; border-radius:999px; font-size:13px; font-weight:600}
+  .b-blue{background:#1d3a7a; color:#cfe0ff; border:1px solid #2f6fed}
+  .b-green{background:#123a24; color:#b6f0cd; border:1px solid #16a34a}
+  .b-amber{background:#3a2c10; color:#ffd999; border:1px solid #d97706}
+  .hero-art{width:100%; height:auto; display:block; border-radius:16px; box-shadow:0 12px 40px rgba(0,0,0,.45)}
+
+  /* ---------- TOC ---------- */
+  nav.toc{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px 22px; margin:26px auto 8px; max-width:1000px}
+  nav.toc h2{margin:0 0 10px; font-size:17px}
+  nav.toc ol{margin:0; padding-left:22px; columns:2; column-gap:36px}
+  nav.toc li{margin:4px 0; break-inside:avoid}
+  nav.toc a{color:var(--blue); text-decoration:none; font-weight:600; font-size:15px}
+  nav.toc a:hover{text-decoration:underline}
+  @media (max-width:700px){ nav.toc ol{columns:1} }
+
+  /* ---------- Sections ---------- */
+  main{padding-bottom:40px}
+  section.sec{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:26px 30px; margin:22px 0; scroll-margin-top:16px}
+  section.sec h2{font-size:23px; margin:0 0 6px; display:flex; align-items:center; gap:12px; line-height:1.5}
+  section.sec h2 .num{
+    flex:none; width:36px; height:36px; border-radius:10px; background:var(--blue); color:#fff;
+    display:inline-flex; align-items:center; justify-content:center; font-size:17px; font-weight:700;
+  }
+  section.sec h3{font-size:18px; margin:26px 0 8px; padding-left:11px; border-left:4px solid var(--blue)}
+  section.sec h4{font-size:16px; margin:18px 0 6px; color:#1e293b}
+  .lead{color:var(--muted); margin:4px 0 16px}
+  p{margin:10px 0}
+  ul,ol{margin:8px 0; padding-left:24px}
+  li{margin:5px 0}
+  strong{color:#0b1220}
+  a{color:var(--blue)}
+  .muted{color:var(--muted); font-size:14.5px}
+
+  /* ---------- Callouts ---------- */
+  .callout{border-radius:12px; padding:14px 18px; margin:16px 0; border:1px solid; font-size:15.5px}
+  .callout b.tag{display:block; margin-bottom:4px; font-size:14px; letter-spacing:.5px}
+  .c-tip{background:var(--green-soft); border-color:#bbe7c9}
+  .c-tip b.tag{color:var(--green)}
+  .c-warn{background:var(--amber-soft); border-color:#f3d9a4}
+  .c-warn b.tag{color:var(--amber)}
+  .c-info{background:var(--blue-soft); border-color:#c9daff}
+  .c-info b.tag{color:var(--blue)}
+  .c-danger{background:#fff1f2; border-color:#fecdd3}
+  .c-danger b.tag{color:#e11d48}
+
+  /* ---------- Code ---------- */
+  pre{
+    background:var(--code-bg); color:var(--code-ink); border-radius:12px;
+    padding:14px 18px; overflow-x:auto; margin:12px 0;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    font-size:14px; line-height:1.7;
+  }
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace; font-size:14px}
+  p code, li code, td code, .callout code{
+    background:#eef1f7; color:#b93815; padding:1px 6px; border-radius:6px; border:1px solid #e2e8f0;
+  }
+  pre .ps{color:#7ef0a0; font-weight:700}
+  pre .cm{color:#8fa3c7}
+  pre .out{color:#a5b7d6}
+  pre .hi{color:#ffd479}
+  .file-label{font-size:13px; color:#94a3b8; margin:14px 0 -6px; font-weight:700; letter-spacing:.5px}
+
+  /* ---------- Tables ---------- */
+  .tbl-wrap{overflow-x:auto; margin:14px 0}
+  table{border-collapse:collapse; width:100%; font-size:14.5px; background:#fff}
+  th,td{border:1px solid #dbe2ee; padding:9px 12px; text-align:left; vertical-align:top}
+  th{background:#eef4ff; color:#12306b; font-weight:700}
+  tbody tr:nth-child(even){background:#f8fafd}
+  table.plain tbody tr:nth-child(even){background:#fff}
+
+  /* ---------- Steps / checklist ---------- */
+  .steps{counter-reset:st; list-style:none; padding:0; margin:14px 0}
+  .steps>li{counter-increment:st; position:relative; padding:0 0 16px 52px; border-left:2px solid #d7e0f0; margin-left:18px}
+  .steps>li:last-child{border-left-color:transparent}
+  .steps>li::before{
+    content:counter(st); position:absolute; left:-19px; top:0; width:36px; height:36px; border-radius:50%;
+    background:#fff; border:3px solid var(--blue); color:var(--blue); font-weight:800;
+    display:flex; align-items:center; justify-content:center; font-size:15px;
+  }
+  .steps>li h4{margin:4px 0 4px}
+  ul.check{list-style:none; padding-left:4px}
+  ul.check li{padding-left:30px; position:relative; margin:9px 0}
+  ul.check li::before{
+    content:""; position:absolute; left:2px; top:8px; width:16px; height:16px;
+    border:2px solid var(--blue); border-radius:4px; background:#fff;
+  }
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:14px 0}
+  @media (max-width:700px){ .grid2{grid-template-columns:1fr} }
+  .mini{border:1px solid var(--line); border-radius:12px; padding:14px 18px; background:#fbfcff}
+  .mini h4{margin-top:0}
+
+  /* ---------- Figures ---------- */
+  figure{margin:20px 0; background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px}
+  figure svg{display:block; width:100%; height:auto; border-radius:10px}
+  figcaption{font-size:14px; color:var(--muted); text-align:center; margin-top:10px; line-height:1.7}
+
+  /* ---------- Record sheet ---------- */
+  .moon-blank{display:inline-block; width:26px; height:26px; border:1.6px solid #64748b; border-radius:50%; background:#fff}
+  table.sheet th, table.sheet td{font-size:13px; padding:7px 8px; text-align:center}
+  table.sheet th{font-size:13px}
+
+  /* ---------- Footer ---------- */
+  footer{background:#0f172a; color:#94a3b8; padding:26px 20px; text-align:center; font-size:14px; margin-top:30px}
+  footer b{color:#e2e8f0}
+
+  @media print{
+    body{background:#fff; font-size:12.5px}
+    nav.toc{display:none}
+    section.sec{border:none; box-shadow:none; padding:8px 0; margin:10px 0; break-inside:avoid}
+    header.hero{background:#0f172a !important; -webkit-print-color-adjust:exact; print-color-adjust:exact}
+    pre{background:#0f172a !important; -webkit-print-color-adjust:exact; print-color-adjust:exact}
+    a{color:inherit; text-decoration:none}
+    figure{break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+
+<!-- 共用 SVG 圖示定義（內嵌，不連網） -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
+    </marker>
+    <marker id="arL" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#93a5c7"/>
+    </marker>
+    <marker id="arB" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2f6fed"/>
+    </marker>
+  </defs>
+</svg>
+
+<header class="hero">
+  <div class="wrap">
+    <svg class="hero-art" viewBox="0 0 960 320" role="img" aria-label="夜空中的月亮與 OpenCode 終端機插圖">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#0b1020"/>
+          <stop offset="1" stop-color="#1b2b52"/>
+        </linearGradient>
+      </defs>
+      <rect width="960" height="320" fill="url(#sky)"/>
+      <g fill="#cdd9ff">
+        <circle cx="60" cy="40" r="1.8"/><circle cx="150" cy="70" r="1.2"/><circle cx="330" cy="30" r="1.6"/>
+        <circle cx="470" cy="55" r="1.3"/><circle cx="640" cy="35" r="1.8"/><circle cx="700" cy="200" r="1.4"/>
+        <circle cx="880" cy="230" r="1.6"/><circle cx="930" cy="90" r="1.3"/><circle cx="560" cy="250" r="1.5"/>
+        <circle cx="40" cy="200" r="1.3"/><circle cx="240" cy="285" r="1.5"/><circle cx="760" cy="45" r="1.2"/>
+      </g>
+      <!-- 月亮 -->
+      <circle cx="812" cy="104" r="62" fill="#ffe9a8"/>
+      <g fill="#f2dd97">
+        <circle cx="792" cy="86" r="13"/><circle cx="830" cy="120" r="9"/><circle cx="806" cy="132" r="6"/>
+        <circle cx="838" cy="76" r="5"/>
+      </g>
+      <text x="812" y="196" text-anchor="middle" fill="#ffe9a8" font-size="16" font-family="sans-serif" font-weight="700">月亮觀測</text>
+      <!-- 後方視窗：Beam -->
+      <g>
+        <rect x="212" y="34" width="392" height="150" rx="12" fill="#121b30" stroke="#3a4a6b" stroke-width="2"/>
+        <rect x="212" y="34" width="392" height="30" rx="12" fill="#1a2742"/>
+        <circle cx="232" cy="49" r="5" fill="#f87171"/><circle cx="250" cy="49" r="5" fill="#fbbf24"/><circle cx="268" cy="49" r="5" fill="#34d399"/>
+        <text x="290" y="54" fill="#8fa3c7" font-size="13" font-family="sans-serif">Beam｜第二模型</text>
+        <text x="232" y="92" fill="#a5b7d6" font-size="14" font-family="ui-monospace,Menlo,monospace">檢查錯別字與答案 ✓</text>
+        <text x="232" y="118" fill="#7ef0a0" font-size="14" font-family="ui-monospace,Menlo,monospace">已檢查 14 筆觀測紀錄</text>
+        <text x="232" y="152" fill="#8fa3c7" font-size="13" font-family="ui-monospace,Menlo,monospace">耗時 3.2 秒（本機運算）</text>
+      </g>
+      <!-- 前方視窗：OpenCode -->
+      <g>
+        <rect x="70" y="86" width="440" height="192" rx="12" fill="#0d1526" stroke="#33415c" stroke-width="2"/>
+        <rect x="70" y="86" width="440" height="32" rx="12" fill="#16213b"/>
+        <circle cx="92" cy="102" r="5.5" fill="#f87171"/><circle cx="112" cy="102" r="5.5" fill="#fbbf24"/><circle cx="132" cy="102" r="5.5" fill="#34d399"/>
+        <text x="158" y="107" fill="#a9bcd9" font-size="13.5" font-family="sans-serif">OpenCode（TUI）· 本機</text>
+        <text x="92" y="146" fill="#7ef0a0" font-size="14.5" font-family="ui-monospace,Menlo,monospace">$ opencode</text>
+        <text x="92" y="174" fill="#9fb4d8" font-size="14.5" font-family="ui-monospace,Menlo,monospace">/models → ollama/flint40b</text>
+        <text x="92" y="202" fill="#e6edf7" font-size="14.5" font-family="ui-monospace,Menlo,monospace">請用四年級能懂的方式說明月相</text>
+        <text x="92" y="230" fill="#ffd479" font-size="14.5" font-family="ui-monospace,Menlo,monospace">Flint40B：月亮本身不發光……</text>
+        <text x="92" y="260" fill="#5f7296" font-size="13.5" font-family="ui-monospace,Menlo,monospace">▌</text>
+      </g>
+      <path d="M0,300 Q160,268 340,296 T680,292 T960,304 L960,320 L0,320 Z" fill="#0a0f1c"/>
+      <rect x="640" y="246" width="290" height="40" rx="20" fill="#12203f" stroke="#2f6fed"/>
+      <text x="785" y="272" text-anchor="middle" fill="#cfe0ff" font-size="15.5" font-family="sans-serif" font-weight="700">全程本機運算 · 離線可用</text>
+    </svg>
+
+    <h1>國小四年級月亮觀測教學 × OpenCode 本地模型</h1>
+    <p class="sub">從零安裝到跑通：第一模型 <b style="color:#ffe9a8">Flint40B</b>、第二模型 <b style="color:#93c5fd">Beam</b>，全程在自己的電腦上運算。</p>
+    <div class="badges">
+      <span class="badge b-blue">繁體中文</span>
+      <span class="badge b-green">單一自包含 HTML</span>
+      <span class="badge b-green">圖片全內嵌 SVG</span>
+      <span class="badge b-amber">離線可顯示</span>
+      <span class="badge b-blue">新手向・從安裝到跑通</span>
+    </div>
+  </div>
+</header>
+
+<nav class="toc wrap">
+  <h2>目錄</h2>
+  <ol>
+    <li><a href="#s0">這份教材怎麼用</a></li>
+    <li><a href="#s1">系統架構總覽</a></li>
+    <li><a href="#s2">安裝前準備</a></li>
+    <li><a href="#s3">安裝 OpenCode</a></li>
+    <li><a href="#s4">安裝推理引擎與兩個模型</a></li>
+    <li><a href="#s5">設定 OpenCode（opencode.jsonc）</a></li>
+    <li><a href="#s6">第一次跑通：驗證成功</a></li>
+    <li><a href="#s7">雙模型分工工作流（Flint40B ＋ Beam）</a></li>
+    <li><a href="#s8">四年級月亮觀測課程設計</a></li>
+    <li><a href="#s9">讓本地模型參與教學：提示詞集</a></li>
+    <li><a href="#s10">離線使用與隱私</a></li>
+    <li><a href="#s11">常見問題與排錯</a></li>
+    <li><a href="#s12">完成檢核清單</a></li>
+    <li><a href="#a1">附錄：完整設定範例</a></li>
+    <li><a href="#a2">附錄：術語表</a></li>
+  </ol>
+</nav>
+
+<main class="wrap">
+
+<!-- ================= 0 ================= -->
+<section class="sec" id="s0">
+  <h2><span class="num">0</span>這份教材怎麼用</h2>
+  <p class="lead">寫給完全沒碰過終端機的老師、家長與資訊小組。照著由上往下做，就能在自己的電腦上跑起兩個本地模型，並完成四年級月亮觀測教學的準備。</p>
+
+  <div class="grid2">
+    <div class="mini">
+      <h4>學完你能做到</h4>
+      <ul>
+        <li>安裝 OpenCode 與本地推理引擎（Ollama）</li>
+        <li>下載並跑起 <b>Flint40B</b>（第一模型）與 <b>Beam</b>（第二模型）</li>
+        <li>寫出 <code>opencode.jsonc</code> 設定檔並成功對話</li>
+        <li>用 <code>/models</code> 一鍵切換兩個模型</li>
+        <li>設計四年級月亮觀測課程與可列印記錄表</li>
+        <li>用本地模型出學習單、檢查作業、分析觀測紀錄</li>
+      </ul>
+    </div>
+    <div class="mini">
+      <h4>閱讀約定</h4>
+      <ul>
+        <li><b>深色程式碼區塊</b>＝請在終端機輸入的指令</li>
+        <li><b>標「輸出」的區塊</b>＝螢幕上應該看到的結果</li>
+        <li>🟢 綠色框＝小提示　🟠 橙色框＝注意事項</li>
+        <li>本教材所有圖片都是<b>內嵌 SVG</b>，不連網也完整顯示</li>
+        <li>把這個 HTML 檔複製到任何電腦，雙擊即可離線閱讀</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout c-info">
+    <b class="tag">⏱ 10 分鐘速成（已經裝過的人）</b>
+    ① 安裝 OpenCode → ② 安裝 Ollama 並 <code>ollama pull flint40b</code>、<code>ollama pull beam</code> → ③ 專案資料夾建立 <code>opencode.jsonc</code>，寫入 <code>"model": "ollama/flint40b"</code> → ④ 終端機輸入 <code>opencode</code>，用 <code>/models</code> 選模型，開始對話。細節請看第 3～6 章。
+  </div>
+
+  <div class="callout c-warn">
+    <b class="tag">⚠ 關於模型名稱</b>
+    本教材依您指定的兩個本地模型撰寫：<b>Flint40B</b>（第一模型）與 <b>Beam</b>（第二模型）。實際名稱請以 <code>ollama list</code> 或 <code>/models</code> 清單<b>顯示的字串為準</b>（有些會帶 <code>:latest</code> 或大小寫不同）。若名稱不同，把指令與設定中的模型 ID 換掉即可，其餘步驟完全相同。
+  </div>
+</section>
+
+<!-- ================= 1 ================= -->
+<section class="sec" id="s1">
+  <h2><span class="num">1</span>系統架構總覽</h2>
+  <p class="lead">先看懂「東西放在哪裡」，後面每一步就不會迷路。</p>
+
+  <div class="grid2">
+    <div class="mini">
+      <h4>四個名詞</h4>
+      <ul>
+        <li><b>OpenCode</b>：裝在終端機裡的 AI 助理，負責聽你的指令、呼叫模型、處理檔案。</li>
+        <li><b>本地推理引擎</b>（Ollama / LM Studio / vLLM）：把模型實際跑在你電腦上的伺服器，預設位址是 <code>127.0.0.1</code>（本機）。</li>
+        <li><b>Flint40B（第一模型）</b>：主力模型，用於生成學習單、解釋概念、撰寫教材等需要理解力的任務。</li>
+        <li><b>Beam（第二模型）</b>：快速模型，用於檢查錯別字、核對答案、簡短摘要等輕量任務。</li>
+      </ul>
+    </div>
+    <div class="mini">
+      <h4>一句話講完資料流向</h4>
+      <p style="margin-top:6px">你在 OpenCode 輸入文字 → 傳到<b>本機</b>的推理引擎 → Flint40B 或 Beam 生成回答 → 回到你的終端機畫面。</p>
+      <p class="muted">整條路徑都在同一台電腦的迴圈位址（127.0.0.1）上完成，<b>不會把資料送到雲端</b>。</p>
+    </div>
+  </div>
+
+  <figure>
+    <svg viewBox="0 0 960 380" role="img" aria-label="OpenCode 與本地模型架構圖">
+      <rect width="960" height="380" rx="14" fill="#f8fafc"/>
+      <rect x="30" y="24" width="900" height="66" rx="12" fill="#fff7e6" stroke="#f0a500" stroke-width="2"/>
+      <text x="480" y="52" text-anchor="middle" font-size="16" font-weight="700" fill="#8a5a06" font-family="sans-serif">所有推理都在這台電腦上完成（127.0.0.1 本機迴圈）</text>
+      <text x="480" y="76" text-anchor="middle" font-size="14" fill="#a06a12" font-family="sans-serif">只有「安裝軟體」與「首次下載模型」需要網路，其餘可完全離線</text>
+
+      <rect x="30" y="150" width="180" height="100" rx="12" fill="#ffffff" stroke="#94a3b8" stroke-width="2"/>
+      <text x="120" y="192" text-anchor="middle" font-size="17" font-weight="700" fill="#0f172a" font-family="sans-serif">老師的電腦</text>
+      <text x="120" y="220" text-anchor="middle" font-size="14" fill="#475569" font-family="sans-serif">終端機 / 鍵盤輸入</text>
+
+      <line x1="212" y1="200" x2="254" y2="200" stroke="#64748b" stroke-width="2.5" marker-end="url(#ar)"/>
+
+      <rect x="260" y="150" width="200" height="100" rx="12" fill="#eef4ff" stroke="#2f6fed" stroke-width="2.5"/>
+      <text x="360" y="192" text-anchor="middle" font-size="19" font-weight="700" fill="#12306b" font-family="sans-serif">OpenCode</text>
+      <text x="360" y="220" text-anchor="middle" font-size="14" fill="#2f6fed" font-family="sans-serif">TUI 介面 / CLI 指令</text>
+
+      <line x1="462" y1="200" x2="504" y2="200" stroke="#64748b" stroke-width="2.5" marker-end="url(#ar)"/>
+
+      <rect x="510" y="150" width="210" height="100" rx="12" fill="#ffffff" stroke="#94a3b8" stroke-width="2"/>
+      <text x="615" y="190" text-anchor="middle" font-size="16.5" font-weight="700" fill="#0f172a" font-family="sans-serif">本地推理引擎</text>
+      <text x="615" y="216" text-anchor="middle" font-size="13.5" fill="#475569" font-family="sans-serif">Ollama / LM Studio / vLLM</text>
+      <text x="615" y="238" text-anchor="middle" font-size="13" fill="#64748b" font-family="sans-serif">127.0.0.1:11434</text>
+
+      <line x1="722" y1="185" x2="764" y2="134" stroke="#64748b" stroke-width="2.5" marker-end="url(#ar)"/>
+      <line x1="722" y1="215" x2="764" y2="266" stroke="#64748b" stroke-width="2.5" marker-end="url(#ar)"/>
+
+      <rect x="770" y="88" width="160" height="86" rx="12" fill="#f0fdf4" stroke="#16a34a" stroke-width="2.5"/>
+      <text x="850" y="122" text-anchor="middle" font-size="18" font-weight="700" fill="#14532d" font-family="sans-serif">Flint40B</text>
+      <text x="850" y="148" text-anchor="middle" font-size="13.5" fill="#16a34a" font-family="sans-serif">第一模型・主力</text>
+
+      <rect x="770" y="228" width="160" height="86" rx="12" fill="#fff7ed" stroke="#ea580c" stroke-width="2.5"/>
+      <text x="850" y="262" text-anchor="middle" font-size="18" font-weight="700" fill="#7c2d12" font-family="sans-serif">Beam</text>
+      <text x="850" y="288" text-anchor="middle" font-size="13.5" fill="#ea580c" font-family="sans-serif">第二模型・快速</text>
+
+      <text x="480" y="352" text-anchor="middle" font-size="14.5" fill="#475569" font-family="sans-serif">資料流向：輸入 → 本機引擎 → 模型生成 → 回到終端機畫面（全程不離開這台電腦）</text>
+    </svg>
+    <figcaption>圖 1｜整套系統只有三個環節：你的電腦、OpenCode、本地引擎與兩個模型。</figcaption>
+  </figure>
+
+  <div class="callout c-tip">
+    <b class="tag">💡 為什麼要兩個模型？</b>
+    大模型（Flint40B）理解力好但較慢，小模型（Beam）速度快但較容易出錯。把「生成」與「檢查」分給不同模型，既能節省時間，也能讓第二個模型交叉檢查第一個模型的輸出，減少錯誤。
+  </div>
+</section>
+
+<!-- ================= 2 ================= -->
+<section class="sec" id="s2">
+  <h2><span class="num">2</span>安裝前準備</h2>
+  <p class="lead">先確認硬體與軟體，避免裝到一半才發現空間不夠。</p>
+
+  <h3>硬體需求（估算值）</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>項目</th><th>最低需求</th><th>建議配置</th><th>說明</th></tr></thead>
+      <tbody>
+        <tr><td>作業系統</td><td>macOS 12+、Windows 10+、Ubuntu 22.04+</td><td>最新版</td><td>三種系統都可以，步驟略有差異</td></tr>
+        <tr><td>記憶體（跑 Beam）</td><td>16 GB</td><td>32 GB</td><td>小模型，一般筆電即可</td></tr>
+        <tr><td>記憶體（跑 Flint40B）</td><td>32 GB（搭配 Q4 量化）</td><td>64 GB，或顯示卡 VRAM 24 GB 以上</td><td>40B 級模型檔約 20 GB 以上，量化程度影響很大</td></tr>
+        <tr><td>硬碟空間</td><td>25 GB 可用</td><td>60 GB 以上</td><td>OpenCode 數 MB，模型檔很大</td></tr>
+        <tr><td>網路</td><td>安裝期需要</td><td>—</td><td>安裝完成後可完全離線使用</td></tr>
+        <tr><td>其他</td><td>終端機（macOS「終端機」/ Windows PowerShell）</td><td>外接螢幕</td><td>不需要圖形介面</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted">※ 記憶體需求會隨量化（quantization）方式改變。若跑不起來，最簡單的解法是改用量化更低（檔案更小）的版本，或先用 Beam 練習。</p>
+
+  <h3>軟體安裝順序</h3>
+  <ol class="steps">
+    <li><h4>OpenCode</h4><p class="muted">終端機 AI 助理本體（第 3 章）</p></li>
+    <li><h4>Ollama（本地推理引擎）</h4><p class="muted">把模型跑起來的伺服器，本教材以它為例（第 4 章）</p></li>
+    <li><h4>兩個模型：Flint40B、Beam</h4><p class="muted">實際的權重檔，用 <code>ollama pull</code> 下載（第 4 章）</p></li>
+    <li><h4>設定檔 opencode.jsonc</h4><p class="muted">告訴 OpenCode 去哪裡找模型、預設用哪個（第 5 章）</p></li>
+    <li><h4>第一次對話驗證</h4><p class="muted">看到中文回答就是成功（第 6 章）</p></li>
+  </ol>
+
+  <div class="callout c-info">
+    <b class="tag">📁 建議先建立專案資料夾</b>
+    之後所有設定檔與教學檔案都放在這個資料夾。以 macOS / Linux 為例：<br>
+    <code>mkdir -p ~/moon-class &amp;&amp; cd ~/moon-class</code><br>
+    Windows PowerShell：<code>New-Item -ItemType Directory -Path $env:USERPROFILE\moon-class</code>
+  </div>
+</section>
+
+<!-- ================= 3 ================= -->
+<section class="sec" id="s3">
+  <h2><span class="num">3</span>安裝 OpenCode</h2>
+  <p class="lead">挑一種你方便的方式安裝即可，裝好一種就夠。</p>
+
+  <h3>方式 A：macOS（Homebrew）</h3>
+  <pre class="code"><code>brew install anomalyco/tap/opencode-v2</code></pre>
+
+  <h3>方式 B：macOS / Linux（一鍵腳本）</h3>
+  <pre class="code"><code>curl -fsSL https://opencode.ai/v2/install | bash</code></pre>
+
+  <h3>方式 C：npm（macOS / Linux / Windows，需 Node.js 18 以上）</h3>
+  <pre class="code"><code>npm install -g @opencode/cli</code></pre>
+
+  <h3>方式 D：Windows 獨立執行檔</h3>
+  <ol>
+    <li>從官方下載頁取得 <code>windows-x64.zip</code>（或 ARM64 版）。</li>
+    <li>解壓縮到例如 <code>C:\opencode</code>。</li>
+    <li>把該資料夾加入使用者 PATH（PowerShell，重開終端機生效）：</li>
+  </ol>
+  <pre class="code"><code>[Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\opencode", "User")</code></pre>
+  <p class="muted">※ Windows 不支援 winget/scoop 等套件管理器安裝方式，請用獨立執行檔或 npm。</p>
+
+  <h3>驗證安裝</h3>
+  <pre class="term"><span class="ps">$</span> opencode --version
+<span class="out">opencode 2.x.x</span></pre>
+  <ul class="check">
+    <li>有顯示版本號 → 安裝成功，繼續下一章</li>
+    <li>顯示 <code>command not found</code> → 重開一次終端機；仍不行則回頭確認安裝方式與 PATH（見第 11 章）</li>
+  </ul>
+</section>
+
+<!-- ================= 4 ================= -->
+<section class="sec" id="s4">
+  <h2><span class="num">4</span>安裝推理引擎與兩個模型</h2>
+  <p class="lead">本教材以 Ollama 為例（最省事）。若您使用 LM Studio 或 vLLM，做法見本章末的替代方案。</p>
+
+  <h3>4.1 安裝 Ollama</h3>
+  <div class="grid2">
+    <div class="mini">
+      <h4>macOS</h4>
+      <ul>
+        <li>從 Ollama 官網下載 <code>.dmg</code> 安裝，或：</li>
+        <li><code>brew install --cask ollama</code></li>
+        <li>安裝後啟動 Ollama 應用程式（選單列會出現羊駝圖示）</li>
+      </ul>
+    </div>
+    <div class="mini">
+      <h4>Linux</h4>
+      <pre class="code" style="margin-top:6px"><code>curl -fsSL https://ollama.com/install.sh | sh</code></pre>
+      <p class="muted">安裝完成會自動註冊服務；也可手動執行 <code>ollama serve</code>。</p>
+    </div>
+  </div>
+  <p class="muted">Windows：安裝官方 Windows 版後，Ollama 會常駐在系統匣。</p>
+
+  <h3>4.2 確認引擎有在運作</h3>
+  <pre class="term"><span class="ps">$</span> curl http://127.0.0.1:11434/api/tags
+<span class="out">{"models":[{"name":"...", ...}]}</span></pre>
+  <p class="muted">只要不是「連線被拒絕」就代表引擎正常。若被拒絕，先執行 <code>ollama serve</code>（macOS 則確認 Ollama 應用程式已開啟）。</p>
+
+  <h3>4.3 下載兩個模型</h3>
+  <pre class="term"><span class="ps">$</span> ollama pull flint40b
+<span class="out">pulling manifest… 下載中（40B 級模型可能 20 GB 以上，請耐心等待）</span>
+
+<span class="ps">$</span> ollama pull beam
+<span class="out">pulling manifest… 下載中</span></pre>
+
+  <div class="callout c-warn">
+    <b class="tag">⚠ 模型 ID 以清單為準</b>
+    執行 <code>ollama list</code> 查看實際名稱。若清單顯示的是 <code>flint40b:latest</code>、<code>Flint40B</code> 或其他寫法，請<b>一律以清單字串為準</b>，後續 <code>opencode.jsonc</code> 與 <code>/models</code> 選擇時都要用同一個字串。
+  </div>
+
+  <h4>如果拿到的是 GGUF 檔（離線教材常見）</h4>
+  <ol>
+    <li>在模型檔所在資料夾建立文字檔 <code>Modelfile</code>，內容一行：</li>
+  </ol>
+  <pre class="code"><code>FROM ./flint40b-Q4_K_M.gguf</code></pre>
+  <ol start="2">
+    <li>註冊進 Ollama（名稱可自取，建議就叫 <code>flint40b</code>）：</li>
+  </ol>
+  <pre class="term"><span class="ps">$</span> ollama create flint40b -f Modelfile
+<span class="out">success</span>
+<span class="ps">$</span> ollama list
+<span class="out">NAME            ID              SIZE
+flint40b        xxxxxxxx        22 GB
+beam            xxxxxxxx        5 GB</span></pre>
+
+  <h3>4.4 各別測試一次</h3>
+  <pre class="term"><span class="ps">$</span> ollama run flint40b
+<span class="out">&gt; 請用繁體中文、以四年級學生能懂的方式，說明月相是怎麼來的（100 字以內）</span>
+<span class="out">月亮自己不會發光，它反射太陽的光。地球、月亮、太陽的位置不斷改變，</span>
+<span class="out">我們從地球看到被照亮的部分，形狀就不一樣，這就是月相……</span>
+<span class="ps">&gt;</span> /bye</pre>
+  <p class="muted">看到中文回答即成功。輸入 <code>/bye</code> 離開測試介面。</p>
+
+  <h3>4.5 替代方案（不用 Ollama 時）</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>引擎</th><th>預定位址</th><th>說明</th></tr></thead>
+      <tbody>
+        <tr><td>Ollama</td><td><code>http://127.0.0.1:11434</code></td><td>OpenCode 會自動探索模型，最省事（本教材首選）</td></tr>
+        <tr><td>LM Studio</td><td><code>http://127.0.0.1:1234/v1</code></td><td>有圖形介面，開啟本機伺服器後 OpenCode 同樣自動探索</td></tr>
+        <tr><td>vLLM</td><td><code>http://127.0.0.1:8000/v1</code></td><td>進階，適合 Linux + 顯示卡伺服器</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ================= 5 ================= -->
+<section class="sec" id="s5">
+  <h2><span class="num">5</span>設定 OpenCode（opencode.jsonc）</h2>
+  <p class="lead">設定檔告訴 OpenCode：預設用哪個模型、去哪裡連引擎、第二個模型怎麼呼叫。</p>
+
+  <h3>5.1 建立設定檔</h3>
+  <p>在專案資料夾（例如 <code>~/moon-class</code>）裡建立 <code>opencode.jsonc</code>：</p>
+  <p class="file-label">📁 ~/moon-class/opencode.jsonc</p>
+  <pre class="code"><code>{
+  "$schema": "https://opencode.ai/config.json",
+
+  // 第一模型（主力）：預設就用它
+  "model": "ollama/flint40b",
+
+  // 離線環境關閉更新檢查
+  "update": "disable",
+
+  "providers": {
+    "ollama": {
+      "settings": {
+        "baseURL": "http://127.0.0.1:11434/v1"
+      }
+    }
+  },
+
+  // 第二模型（Beam）：註冊成子代理，隨時呼叫
+  "agents": {
+    "beam-assist": {
+      "description": "使用 Beam 進行檢查、出題與摘要的子代理",
+      "mode": "subagent",
+      "model": "ollama/beam"
+    }
+  },
+
+  // 給模型的長期規定（可選，但強烈建議）
+  "instructions": ["teaching-rules.md"]
+}</code></pre>
+
+  <p class="file-label">📁 ~/moon-class/teaching-rules.md</p>
+  <pre class="code"><code>- 一律使用繁體中文（台灣用語）回覆，不要自動轉成簡體。
+- 說話對象是國小四年級學生：句子要短、具體、少術語。
+- 不確定的科學知識，請在句尾標註「請老師確認」。
+- 出題時每題都要附答案與一句解釋。</code></pre>
+
+  <div class="callout c-tip">
+    <b class="tag">💡 存檔即生效</b>
+    OpenCode 會自動監測設定檔，<b>存檔後不需要重開</b>。若想強制重載，在 TUI 輸入 <code>/reload</code>。
+  </div>
+
+  <h3>5.2 模型 ID 怎麼寫</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>情境</th><th>寫法</th></tr></thead>
+      <tbody>
+        <tr><td>Ollama 自動探索到的模型</td><td><code>ollama/flint40b</code>、<code>ollama/beam</code></td></tr>
+        <tr><td>清單顯示有 <code>:latest</code></td><td><code>ollama/flint40b:latest</code>（以清單為準）</td></tr>
+        <tr><td>模型在 LM Studio</td><td><code>lmstudio/模型名</code></td></tr>
+        <tr><td>模型在自建 OpenAI 相容伺服器</td><td>自訂 provider，見附錄 A-2</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout c-info">
+    <b class="tag">🔎 怎麼確認 ID 寫對了？</b>
+    啟動 OpenCode 後輸入 <code>/models</code>，清單裡找得到 <code>ollama/flint40b</code> 與 <code>ollama/beam</code> 就代表設定正確。找不到請見第 11 章「/models 看不到模型」。
+  </div>
+</section>
+
+<!-- ================= 6 ================= -->
+<section class="sec" id="s6">
+  <h2><span class="num">6</span>第一次跑通：驗證成功</h2>
+  <p class="lead">五個步驟，看到中文回答就代表整套系統通了。</p>
+
+  <ol class="steps">
+    <li>
+      <h4>開啟終端機，進入專案資料夾</h4>
+      <pre class="code"><code>cd ~/moon-class
+ls</code></pre>
+      <p class="muted">應該看得到 <code>opencode.jsonc</code> 與 <code>teaching-rules.md</code>。</p>
+    </li>
+    <li>
+      <h4>啟動 OpenCode（互動介面 TUI）</h4>
+      <pre class="term"><span class="ps">$</span> opencode</pre>
+      <p class="muted">畫面會出現聊天輸入框與狀態列。</p>
+    </li>
+    <li>
+      <h4>選擇第一模型</h4>
+      <pre class="term"><span class="ps">&gt;</span> /models
+<span class="out">（用方向鍵選取 ollama/flint40b，按 Enter）</span></pre>
+    </li>
+    <li>
+      <h4>送出第一句話</h4>
+      <pre class="term"><span class="ps">&gt;</span> 請用繁體中文、以四年級能懂的方式說明月相是怎麼形成的，100 字以內。</pre>
+    </li>
+    <li>
+      <h4>看到中文回答 → 跑通了 🎉</h4>
+      <pre class="term"><span class="out">月亮本身不會發光，是反射太陽的光。太陽照亮月亮的一半，</span>
+<span class="out">但我們從地球看到「亮面」的角度每天不同，所以形狀會變化……</span></pre>
+    </li>
+  </ol>
+
+  <h3>指令列一次指令模式（不進互動介面）</h3>
+  <pre class="term"><span class="ps">$</span> opencode run "請用繁體中文出 3 題四年級月相選擇題，附答案"
+<span class="ps">$</span> opencode run --model ollama/beam "檢查這句有沒有錯別字：月亮反射大陽的光"</code></pre>
+  <p class="muted">第二條就是<b>切換到第二模型 Beam</b> 的最短寫法。</p>
+
+  <h3>成功檢核</h3>
+  <ul class="check">
+    <li><code>opencode --version</code> 有版本號</li>
+    <li><code>ollama list</code> 看得到 flint40b 與 beam</li>
+    <li><code>/models</code> 清單裡有 <code>ollama/flint40b</code> 與 <code>ollama/beam</code></li>
+    <li>TUI 中提問能得到<b>繁體中文</b>回答</li>
+    <li><code>opencode run --model ollama/beam "..."</code> 也能得到回答</li>
+  </ul>
+
+  <div class="callout c-warn">
+    <b class="tag">⚠ 常見卡關點</b>
+    ① 忘記開 Ollama（引擎沒啟動）　② 模型 ID 大小寫或 <code>:latest</code> 與清單不一致　③ 設定檔 JSON 有全形逗號或漏括號（<code>opencode.jsonc</code> 支援註解，但基本語法仍要正確）。詳細排錯請看第 11 章。
+  </div>
+</section>
+
+<!-- ================= 7 ================= -->
+<section class="sec" id="s7">
+  <h2><span class="num">7</span>雙模型分工工作流（Flint40B ＋ Beam）</h2>
+  <p class="lead">把兩個模型當成兩位老師：一位負責寫，一位負責檢查。</p>
+
+  <figure>
+    <svg viewBox="0 0 960 370" role="img" aria-label="Flint40B 與 Beam 分工圖">
+      <rect width="960" height="370" rx="14" fill="#f8fafc"/>
+
+      <rect x="330" y="26" width="300" height="76" rx="12" fill="#eef4ff" stroke="#2f6fed" stroke-width="2.5"/>
+      <text x="480" y="58" text-anchor="middle" font-size="17" font-weight="700" fill="#12306b" font-family="sans-serif">OpenCode 對話視窗</text>
+      <text x="480" y="84" text-anchor="middle" font-size="13.5" fill="#2f6fed" font-family="sans-serif">你在這裡下指令、切換模型</text>
+
+      <path d="M480 104 V 146 H 210 V 172" fill="none" stroke="#64748b" stroke-width="2.5" marker-end="url(#ar)"/>
+      <path d="M480 104 V 146 H 750 V 172" fill="none" stroke="#64748b" stroke-width="2.5" marker-end="url(#ar)"/>
+
+      <rect x="40" y="178" width="340" height="150" rx="12" fill="#f0fdf4" stroke="#16a34a" stroke-width="2.5"/>
+      <text x="210" y="212" text-anchor="middle" font-size="17.5" font-weight="700" fill="#14532d" font-family="sans-serif">Flint40B｜第一模型（主力）</text>
+      <text x="66" y="248" font-size="14.5" fill="#166534" font-family="sans-serif">・生成學習單、考卷與答案</text>
+      <text x="66" y="276" font-size="14.5" fill="#166534" font-family="sans-serif">・用四年級語言解釋月相概念</text>
+      <text x="66" y="304" font-size="14.5" fill="#166534" font-family="sans-serif">・撰寫教材草稿、家長通知</text>
+
+      <rect x="580" y="178" width="340" height="150" rx="12" fill="#fff7ed" stroke="#ea580c" stroke-width="2.5"/>
+      <text x="750" y="212" text-anchor="middle" font-size="17.5" font-weight="700" fill="#7c2d12" font-family="sans-serif">Beam｜第二模型（快速）</text>
+      <text x="606" y="248" font-size="14.5" fill="#9a3412" font-family="sans-serif">・檢查錯別字與格式</text>
+      <text x="606" y="276" font-size="14.5" fill="#9a3412" font-family="sans-serif">・核對選擇題答案是否正確</text>
+      <text x="606" y="304" font-size="14.5" fill="#9a3412" font-family="sans-serif">・快速摘要與出題初稿</text>
+
+      <text x="480" y="354" text-anchor="middle" font-size="14.5" fill="#475569" font-family="sans-serif">切換方式：TUI 輸入 /models ・ 指令列 opencode run --model ollama/beam ・ 設定檔指定 agent 的 model</text>
+    </svg>
+    <figcaption>圖 2｜同一個對話視窗，兩種模型各司其職；最後一定由老師做人工覆核。</figcaption>
+  </figure>
+
+  <h3>任務分配建議表</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>任務</th><th>建議模型</th><th>原因</th></tr></thead>
+      <tbody>
+        <tr><td>生成學習單、考卷、長文解釋</td><td><b>Flint40B</b></td><td>40B 級理解力較好，長文較穩</td></tr>
+        <tr><td>錯別字檢查、標點與格式</td><td><b>Beam</b></td><td>任務單純，速度優先</td></tr>
+        <tr><td>核對選擇題答案</td><td><b>Beam</b> 初查 → <b>Flint40B</b> 複查</td><td>雙模型交叉檢查，降低錯誤率</td></tr>
+        <tr><td>把 14 天觀測紀錄整理成表格</td><td><b>Flint40B</b></td><td>需要理解語意與欄位對應</td></tr>
+        <tr><td>把學生心得改寫成家長通知</td><td><b>Flint40B</b> 寫 → <b>Beam</b> 校對</td><td>生成＋檢查的標準流程</td></tr>
+        <tr><td>最終發布給學生／家長的內容</td><td><b>老師人工審核</b></td><td>本地模型仍可能出錯（幻覺）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>三種切換方式</h3>
+  <div class="grid2">
+    <div class="mini">
+      <h4>① 互動介面切換（最直覺）</h4>
+      <pre class="code" style="margin-top:6px"><code>/models
+# 選 ollama/beam 或 ollama/flint40b</code></pre>
+      <p class="muted">只影響<b>目前這個對話</b>，不改動設定檔。</p>
+    </div>
+    <div class="mini">
+      <h4>② 指令列指定（一次性）</h4>
+      <pre class="code" style="margin-top:6px"><code>opencode run --model ollama/beam "檢查這段文字"</code></pre>
+      <p class="muted">適合排入工作流程、批次執行。</p>
+    </div>
+  </div>
+  <div class="mini" style="margin-top:16px">
+    <h4>③ 子代理（進階，已寫在設定檔裡）</h4>
+    <pre class="code" style="margin-top:6px"><code># 在 TUI 對話中直接要求：
+請使用 beam-assist 子代理，檢查下面的觀測紀錄有無錯別字與邏輯錯誤：
+
+（貼上你的紀錄）</code></pre>
+    <p class="muted">因為第 5 章已把 <code>beam-assist</code> 的 <code>model</code> 設為 <code>ollama/beam</code>，這個子代理會自動用 Beam 作答。</p>
+  </div>
+</section>
+
+<!-- ================= 8 ================= -->
+<section class="sec" id="s8">
+  <h2><span class="num">8</span>四年級月亮觀測課程設計</h2>
+  <p class="lead">5 節課 ＋ 課後連續 14 晚觀測。可搭配前幾章的本地模型執行。</p>
+
+  <h3>8.1 課程總覽</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>節次</th><th>主題</th><th>重點活動</th><th>AI 參與（可選）</th></tr></thead>
+      <tbody>
+        <tr><td>第 1 節</td><td>認識月球與月相</td><td>太陽－月球－地球模型操作、月相八相圖</td><td>用 Flint40B 生成圖解式說明</td></tr>
+        <tr><td>第 2 節</td><td>觀測方法與記錄</td><td>示範方位判斷、練習畫月相、發下記錄表</td><td>用 Flint40B 出「觀測練習題」</td></tr>
+        <tr><td>課後 14 晚</td><td>家庭觀測</td><td>每晚固定時間觀察並填寫記錄表（家長陪同）</td><td>—</td></tr>
+        <tr><td>第 3 節</td><td>資料整理</td><td>把紀錄彙整成班級長條圖、找出規律</td><td>把 CSV 貼給 Flint40B 分析</td></tr>
+        <tr><td>第 4 節</td><td>分享與討論</td><td>小組發表、解釋「為什麼看不到新月」</td><td>用 Beam 快速檢查學習單答案</td></tr>
+        <tr><td>第 5 節</td><td>總結評量</td><td>後測、心得寫作、成果展</td><td>用 Beam 校對錯別字</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>8.2 教學目標</h3>
+  <ul>
+    <li><b>概念</b>：能說出月球本身不發光，月相是「被太陽照亮的部分」在地球上看起來的形狀。</li>
+    <li><b>技能</b>：能連續 14 晚在固定時間、固定地點觀測，並正確畫出月相。</li>
+    <li><b>態度</b>：養成持續記錄、尊重觀測事實的科學態度。</li>
+    <li><b>資訊素養</b>（加碼）：能理解「AI 在本機運算」的概念，並知道 AI 輸出需要人工覆核。</li>
+  </ul>
+
+  <h3>8.3 核心概念：為什麼會有月相？</h3>
+  <figure>
+    <svg viewBox="0 0 960 300" role="img" aria-label="太陽、月球、地球與月相成因示意圖">
+      <rect width="960" height="300" rx="14" fill="#0f172a"/>
+      <!-- 太陽 -->
+      <g stroke="#ffd166" stroke-width="4" stroke-linecap="round">
+        <line x1="144" y1="140" x2="166" y2="140"/>
+        <line x1="144" y1="140" x2="166" y2="140" transform="rotate(45 90 140)"/>
+        <line x1="144" y1="140" x2="166" y2="140" transform="rotate(90 90 140)"/>
+        <line x1="144" y1="140" x2="166" y2="140" transform="rotate(135 90 140)"/>
+        <line x1="144" y1="140" x2="166" y2="140" transform="rotate(180 90 140)"/>
+        <line x1="144" y1="140" x2="166" y2="140" transform="rotate(225 90 140)"/>
+        <line x1="144" y1="140" x2="166" y2="140" transform="rotate(270 90 140)"/>
+        <line x1="144" y1="140" x2="166" y2="140" transform="rotate(315 90 140)"/>
+      </g>
+      <circle cx="90" cy="140" r="46" fill="#ffd166"/>
+      <text x="90" y="230" text-anchor="middle" font-size="16" font-weight="700" fill="#ffd166" font-family="sans-serif">太陽</text>
+
+      <!-- 光線 -->
+      <g stroke="#93a5c7" stroke-width="2" stroke-dasharray="7 6" marker-end="url(#arL)">
+        <line x1="176" y1="108" x2="446" y2="108"/>
+        <line x1="176" y1="140" x2="446" y2="140"/>
+        <line x1="176" y1="172" x2="446" y2="172"/>
+      </g>
+      <text x="310" y="92" text-anchor="middle" font-size="14" fill="#93a5c7" font-family="sans-serif">太陽光（平行照射）</text>
+
+      <!-- 月球：左半亮、右半暗 -->
+      <circle cx="520" cy="140" r="56" fill="#26314f" stroke="#46557a" stroke-width="2"/>
+      <path d="M 520 84 A 56 56 0 0 0 520 196 Z" fill="#ffe9a8"/>
+      <text x="520" y="230" text-anchor="middle" font-size="16" font-weight="700" fill="#e6edf7" font-family="sans-serif">月球（永遠半邊被照亮）</text>
+
+      <!-- 視線 -->
+      <line x1="784" y1="140" x2="582" y2="140" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 5" marker-end="url(#ar)"/>
+
+      <!-- 地球 -->
+      <circle cx="848" cy="140" r="58" fill="#3b82f6" stroke="#2563eb" stroke-width="2"/>
+      <ellipse cx="830" cy="118" rx="24" ry="15" fill="#22c55e" opacity=".9"/>
+      <ellipse cx="866" cy="164" rx="20" ry="13" fill="#22c55e" opacity=".9"/>
+      <circle cx="790" cy="140" r="8" fill="#ffffff" stroke="#0f172a" stroke-width="2"/>
+      <text x="790" y="112" text-anchor="middle" font-size="13.5" fill="#cbd5e1" font-family="sans-serif">觀察者</text>
+      <text x="848" y="230" text-anchor="middle" font-size="16" font-weight="700" fill="#e6edf7" font-family="sans-serif">地球</text>
+
+      <text x="480" y="272" text-anchor="middle" font-size="15" fill="#a9bcd9" font-family="sans-serif">我們看到的月相，就是「從觀察者角度看過去，被照亮的那一塊」的形狀。</text>
+    </svg>
+    <figcaption>圖 3｜太陽只照亮月球的一半；地球上的我們每天換角度看它，於是看到不同的形狀。</figcaption>
+  </figure>
+
+  <div class="callout c-tip">
+    <b class="tag">💡 課堂小實作</b>
+    用一顆乒乓球（月球）＋手電筒（太陽）＋自己的頭（地球），學生自己轉一圈，就能「看到」八種月相。這是四年級最容易懂的示範。
+  </div>
+
+  <h3>8.4 月相八相圖（北半球：亮面先出現在右邊）</h3>
+  <figure>
+    <svg viewBox="0 0 960 250" role="img" aria-label="月相八相圖">
+      <rect width="960" height="250" rx="14" fill="#0f172a"/>
+      <text x="480" y="30" text-anchor="middle" font-size="16" font-weight="700" fill="#e6edf7" font-family="sans-serif">月相變化順序（約 29.5 天循環一次）</text>
+
+      <!-- 1 新月 -->
+      <g transform="translate(60,0)">
+        <circle cx="0" cy="92" r="44" fill="#1a2340" stroke="#5b6b93" stroke-width="2" stroke-dasharray="5 4"/>
+        <text x="0" y="172" text-anchor="middle" font-size="14.5" font-weight="700" fill="#e6edf7" font-family="sans-serif">新月</text>
+        <text x="0" y="194" text-anchor="middle" font-size="12.5" fill="#8fa3c7" font-family="sans-serif">農曆初一</text>
+        <text x="0" y="214" text-anchor="middle" font-size="12" fill="#64748b" font-family="sans-serif">夜晚看不到</text>
+      </g>
+      <path d="M 118 86 l 11 6 l -11 6 z" fill="#46557a"/>
+      <!-- 2 蛾眉月 -->
+      <g transform="translate(180,0)">
+        <circle cx="0" cy="92" r="44" fill="#26314f" stroke="#46557a" stroke-width="2"/>
+        <path d="M 0 48 A 44 44 0 0 1 0 136 A 26 44 0 0 0 0 48 Z" fill="#ffe9a8" stroke="#e8c66a" stroke-width="1.5"/>
+        <text x="0" y="172" text-anchor="middle" font-size="14.5" font-weight="700" fill="#e6edf7" font-family="sans-serif">蛾眉月</text>
+        <text x="0" y="194" text-anchor="middle" font-size="12.5" fill="#8fa3c7" font-family="sans-serif">初三、初四</text>
+        <text x="0" y="214" text-anchor="middle" font-size="12" fill="#64748b" font-family="sans-serif">日落後西方</text>
+      </g>
+      <path d="M 238 86 l 11 6 l -11 6 z" fill="#46557a"/>
+      <!-- 3 上弦月 -->
+      <g transform="translate(300,0)">
+        <circle cx="0" cy="92" r="44" fill="#26314f" stroke="#46557a" stroke-width="2"/>
+        <path d="M 0 48 A 44 44 0 0 1 0 136 Z" fill="#ffe9a8" stroke="#e8c66a" stroke-width="1.5"/>
+        <text x="0" y="172" text-anchor="middle" font-size="14.5" font-weight="700" fill="#e6edf7" font-family="sans-serif">上弦月</text>
+        <text x="0" y="194" text-anchor="middle" font-size="12.5" fill="#8fa3c7" font-family="sans-serif">初七、初八</text>
+        <text x="0" y="214" text-anchor="middle" font-size="12" fill="#64748b" font-family="sans-serif">上半夜南方</text>
+      </g>
+      <path d="M 358 86 l 11 6 l -11 6 z" fill="#46557a"/>
+      <!-- 4 盈凸月 -->
+      <g transform="translate(420,0)">
+        <circle cx="0" cy="92" r="44" fill="#26314f" stroke="#46557a" stroke-width="2"/>
+        <path d="M 0 48 A 44 44 0 0 1 0 136 A 26 44 0 0 1 0 48 Z" fill="#ffe9a8" stroke="#e8c66a" stroke-width="1.5"/>
+        <text x="0" y="172" text-anchor="middle" font-size="14.5" font-weight="700" fill="#e6edf7" font-family="sans-serif">盈凸月</text>
+        <text x="0" y="194" text-anchor="middle" font-size="12.5" fill="#8fa3c7" font-family="sans-serif">十一、十二</text>
+        <text x="0" y="214" text-anchor="middle" font-size="12" fill="#64748b" font-family="sans-serif">傍晚已升起</text>
+      </g>
+      <path d="M 478 86 l 11 6 l -11 6 z" fill="#46557a"/>
+      <!-- 5 滿月 -->
+      <g transform="translate(540,0)">
+        <circle cx="0" cy="92" r="44" fill="#ffe9a8" stroke="#e8c66a" stroke-width="2"/>
+        <circle cx="-12" cy="78" r="8" fill="#f2dd97"/><circle cx="12" cy="104" r="6" fill="#f2dd97"/>
+        <text x="0" y="172" text-anchor="middle" font-size="14.5" font-weight="700" fill="#e6edf7" font-family="sans-serif">滿月</text>
+        <text x="0" y="194" text-anchor="middle" font-size="12.5" fill="#8fa3c7" font-family="sans-serif">十五、十六</text>
+        <text x="0" y="214" text-anchor="middle" font-size="12" fill="#64748b" font-family="sans-serif">整夜可見</text>
+      </g>
+      <path d="M 598 86 l 11 6 l -11 6 z" fill="#46557a"/>
+      <!-- 6 虧凸月 -->
+      <g transform="translate(660,0)">
+        <circle cx="0" cy="92" r="44" fill="#26314f" stroke="#46557a" stroke-width="2"/>
+        <path d="M 0 48 A 44 44 0 0 0 0 136 A 26 44 0 0 0 0 48 Z" fill="#ffe9a8" stroke="#e8c66a" stroke-width="1.5"/>
+        <text x="0" y="172" text-anchor="middle" font-size="14.5" font-weight="700" fill="#e6edf7" font-family="sans-serif">虧凸月</text>
+        <text x="0" y="194" text-anchor="middle" font-size="12.5" fill="#8fa3c7" font-family="sans-serif">十八、十九</text>
+        <text x="0" y="214" text-anchor="middle" font-size="12" fill="#64748b" font-family="sans-serif">入夜後東方</text>
+      </g>
+      <path d="M 718 86 l 11 6 l -11 6 z" fill="#46557a"/>
+      <!-- 7 下弦月 -->
+      <g transform="translate(780,0)">
+        <circle cx="0" cy="92" r="44" fill="#26314f" stroke="#46557a" stroke-width="2"/>
+        <path d="M 0 48 A 44 44 0 0 0 0 136 Z" fill="#ffe9a8" stroke="#e8c66a" stroke-width="1.5"/>
+        <text x="0" y="172" text-anchor="middle" font-size="14.5" font-weight="700" fill="#e6edf7" font-family="sans-serif">下弦月</text>
+        <text x="0" y="194" text-anchor="middle" font-size="12.5" fill="#8fa3c7" font-family="sans-serif">廿二、廿三</text>
+        <text x="0" y="214" text-anchor="middle" font-size="12" fill="#64748b" font-family="sans-serif">下半夜南方</text>
+      </g>
+      <path d="M 838 86 l 11 6 l -11 6 z" fill="#46557a"/>
+      <!-- 8 殘月 -->
+      <g transform="translate(900,0)">
+        <circle cx="0" cy="92" r="44" fill="#26314f" stroke="#46557a" stroke-width="2"/>
+        <path d="M 0 48 A 44 44 0 0 0 0 136 A 26 44 0 0 1 0 48 Z" fill="#ffe9a8" stroke="#e8c66a" stroke-width="1.5"/>
+        <text x="0" y="172" text-anchor="middle" font-size="14.5" font-weight="700" fill="#e6edf7" font-family="sans-serif">殘月</text>
+        <text x="0" y="194" text-anchor="middle" font-size="12.5" fill="#8fa3c7" font-family="sans-serif">廿六、廿七</text>
+        <text x="0" y="214" text-anchor="middle" font-size="12" fill="#64748b" font-family="sans-serif">黎明前東方</text>
+      </g>
+    </svg>
+    <figcaption>圖 4｜亮面由右邊開始變胖 → 滿 → 由左邊變瘦，循環不息。可直接投影或列印當學習單。</figcaption>
+  </figure>
+
+  <h3>8.5 觀測五步驟</h3>
+  <figure>
+    <svg viewBox="0 0 960 175" role="img" aria-label="月亮觀測五步驟流程圖">
+      <rect width="960" height="175" rx="14" fill="#f8fafc"/>
+      <!-- 步驟 1 -->
+      <circle cx="100" cy="28" r="15" fill="#2f6fed"/><text x="100" y="33" text-anchor="middle" font-size="14" font-weight="800" fill="#fff" font-family="sans-serif">1</text>
+      <rect x="20" y="48" width="160" height="94" rx="10" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>
+      <text x="100" y="84" text-anchor="middle" font-size="15.5" font-weight="700" fill="#0f172a" font-family="sans-serif">選時間地點</text>
+      <text x="100" y="110" text-anchor="middle" font-size="12.5" fill="#475569" font-family="sans-serif">每天固定 20:00</text>
+      <text x="100" y="130" text-anchor="middle" font-size="12.5" fill="#475569" font-family="sans-serif">同一個觀察位置</text>
+      <line x1="184" y1="95" x2="204" y2="95" stroke="#64748b" stroke-width="2.5" marker-end="url(#ar)"/>
+      <!-- 2 -->
+      <circle cx="290" cy="28" r="15" fill="#2f6fed"/><text x="290" y="33" text-anchor="middle" font-size="14" font-weight="800" fill="#fff" font-family="sans-serif">2</text>
+      <rect x="210" y="48" width="160" height="94" rx="10" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>
+      <text x="290" y="84" text-anchor="middle" font-size="15.5" font-weight="700" fill="#0f172a" font-family="sans-serif">看方位與高度</text>
+      <text x="290" y="110" text-anchor="middle" font-size="12.5" fill="#475569" font-family="sans-serif">用建築物當參考</text>
+      <text x="290" y="130" text-anchor="middle" font-size="12.5" fill="#475569" font-family="sans-serif">低 / 中 / 高 三級</text>
+      <line x1="374" y1="95" x2="394" y2="95" stroke="#64748b" stroke-width="2.5" marker-end="url(#ar)"/>
+      <!-- 3 -->
+      <circle cx="480" cy="28" r="15" fill="#2f6fed"/><text x="480" y="33" text-anchor="middle" font-size="14" font-weight="800" fill="#fff" font-family="sans-serif">3</text>
+      <rect x="400" y="48" width="160" height="94" rx="10" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>
+      <text x="480" y="84" text-anchor="middle" font-size="15.5" font-weight="700" fill="#0f172a" font-family="sans-serif">畫下月亮</text>
+      <text x="480" y="110" text-anchor="middle" font-size="12.5" fill="#475569" font-family="sans-serif">圓框內把「看不到</text>
+      <text x="480" y="130" text-anchor="middle" font-size="12.5" fill="#475569" font-family="sans-serif">的部分」塗黑</text>
+      <line x1="564" y1="95" x2="584" y2="95" stroke="#64748b" stroke-width="2.5" marker-end="url(#ar)"/>
+      <!-- 4 -->
+      <circle cx="670" cy="28" r="15" fill="#2f6fed"/><text x="670" y="33" text-anchor="middle" font-size="14" font-weight="800" fill="#fff" font-family="sans-serif">4</text>
+      <rect x="590" y="48" width="160" height="94" rx="10" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>
+      <text x="670" y="84" text-anchor="middle" font-size="15.5" font-weight="700" fill="#0f172a" font-family="sans-serif">填寫紀錄</text>
+      <text x="670" y="110" text-anchor="middle" font-size="12.5" fill="#475569" font-family="sans-serif">日期、天氣、方位</text>
+      <text x="670" y="130" text-anchor="middle" font-size="12.5" fill="#475569" font-family="sans-serif">顏色、一句心得</text>
+      <line x1="754" y1="95" x2="774" y2="95" stroke="#64748b" stroke-width="2.5" marker-end="url(#ar)"/>
+      <!-- 5 -->
+      <circle cx="860" cy="28" r="15" fill="#16a34a"/><text x="860" y="33" text-anchor="middle" font-size="14" font-weight="800" fill="#fff" font-family="sans-serif">5</text>
+      <rect x="780" y="48" width="160" height="94" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+      <text x="860" y="84" text-anchor="middle" font-size="15.5" font-weight="700" fill="#14532d" font-family="sans-serif">整理與提問</text>
+      <text x="860" y="110" text-anchor="middle" font-size="12.5" fill="#166534" font-family="sans-serif">交給本地模型</text>
+      <text x="860" y="130" text-anchor="middle" font-size="12.5" fill="#166534" font-family="sans-serif">分析規律（第 9 章）</text>
+    </svg>
+    <figcaption>圖 5｜第 1～4 步是學生的科學任務，第 5 步是資訊素養的加碼應用。</figcaption>
+  </figure>
+
+  <h3>8.6 觀測記錄表（可直接列印）</h3>
+  <p class="muted">建議橫向列印。每天畫一個圓，把「看不到的部分」塗黑，亮的部分留白。</p>
+  <div class="tbl-wrap">
+    <table class="sheet plain">
+      <thead>
+        <tr>
+          <th>日期</th><th>農曆</th><th>時間</th><th>天氣</th><th>方位</th>
+          <th>月亮形狀（塗黑看不到處）</th><th>高度<br>低/中/高</th><th>顏色</th><th>今天的一句話</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>　</td><td>　</td><td>20:00</td><td>　</td><td>　</td><td><span class="moon-blank"></span></td><td>　</td><td>　</td><td>　</td></tr>
+        <tr><td>　</td><td>　</td><td>20:00</td><td>　</td><td>　</td><td><span class="moon-blank"></span></td><td>　</td><td>　</td><td>　</td></tr>
+        <tr><td>　</td><td>　</td><td>20:00</td><td>　</td><td>　</td><td><span class="moon-blank"></span></td><td>　</td><td>　</td><td>　</td></tr>
+        <tr><td>　</td><td>　</td><td>20:00</td><td>　</td><td>　</td><td><span class="moon-blank"></span></td><td>　</td><td>　</td><td>　</td></tr>
+        <tr><td>　</td><td>　</td><td>20:00</td><td>　</td><td>　</td><td><span class="moon-blank"></span></td><td>　</td><td>　</td><td>　</td></tr>
+        <tr><td>　</td><td>　</td><td>20:00</td><td>　</td><td>　</td><td><span class="moon-blank"></span></td><td>　</td><td>　</td><td>　</td></tr>
+        <tr><td>　</td><td>　</td><td>20:00</td><td>　</td><td>　</td><td><span class="moon-blank"></span></td><td>　</td><td>　</td><td>　</td></tr>
+        <tr><td>　</td><td>　</td><td>20:00</td><td>　</td><td>　</td><td><span class="moon-blank"></span></td><td>　</td><td>　</td><td>　</td></tr>
+        <tr><td>　</td><td>　</td><td>20:00</td><td>　</td><td>　</td><td><span class="moon-blank"></span></td><td>　</td><td>　</td><td>　</td></tr>
+        <tr><td>　</td><td>　</td><td>20:00</td><td>　</td><td>　</td><td><span class="moon-blank"></span></td><td>　</td><td>　</td><td>　</td></tr>
+        <tr><td>　</td><td>　</td><td>20:00</td><td>　</td><td>　</td><td><span class="moon-blank"></span></td><td>　</td><td>　</td><td>　</td></tr>
+        <tr><td>　</td><td>　</td><td>20:00</td><td>　</td><td>　</td><td><span class="moon-blank"></span></td><td>　</td><td>　</td><td>　</td></tr>
+        <tr><td>　</td><td>　</td><td>20:00</td><td>　</td><td>　</td><td><span class="moon-blank"></span></td><td>　</td><td>　</td><td>　</td></tr>
+        <tr><td>　</td><td>　</td><td>20:00</td><td>　</td><td>　</td><td><span class="moon-blank"></span></td><td>　</td><td>　</td><td>　</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>8.7 觀測要領與安全</h3>
+  <div class="grid2">
+    <div class="mini">
+      <h4>觀測要領</h4>
+      <ul>
+        <li><b>固定</b>：每天同一時間、同一地點，資料才可比較。</li>
+        <li><b>定位</b>：選一個固定參考物（如電線桿、窗框），記錄月亮在它的哪一側。</li>
+        <li><b>先看再畫</b>：先描述（亮面朝哪邊、多寬），再動筆塗黑。</li>
+        <li><b>雲天也要記</b>：寫上「雲多看不到」，這也是有效資料。</li>
+        <li><b>不用望遠鏡也可以</b>：雙筒望遠鏡可看亮面細節，但<b>絕不可對著太陽</b>。</li>
+      </ul>
+    </div>
+    <div class="mini">
+      <h4>安全提醒（務必宣導）</h4>
+      <ul>
+        <li>夜間觀測由<b>家長陪同</b>，注意交通安全與地面高低。</li>
+        <li><b>絕對不可直視太陽</b>，也不可用望遠鏡對太陽。</li>
+        <li>庭院、頂樓、窗邊都要注意防墜與照明。</li>
+        <li>遇雷雨、颱風等惡劣天氣，改為室內討論或順延。</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>8.8 評量規準（示例）</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>項目</th><th>比例</th><th>優（A）</th><th>可（C）</th></tr></thead>
+      <tbody>
+        <tr><td>觀測紀錄完整度</td><td>40%</td><td>14 晚完整、時間穩定、欄位齊備</td><td>出席 10 晚以上、欄位大致填寫</td></tr>
+        <tr><td>月相圖正確性</td><td>30%</td><td>亮面方向與實際相符、寬窄準確</td><td>形狀大致正確但亮面方向常錯</td></tr>
+        <tr><td>心得與解釋</td><td>20%</td><td>能用自己話解釋月相成因</td><td>能描述看到的變化</td></tr>
+        <tr><td>資料整理（含 AI 協作）</td><td>10%</td><td>能指出 AI 分析的正確與錯誤之處</td><td>有完成整理任務</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout c-danger">
+    <b class="tag">⛔ AI 使用規範（建議在第一節課就講清楚）</b>
+    ① 觀測紀錄必須是<b>自己真的看到的</b>，不可以叫 AI 編造。② AI 產生的解釋、題目，<b>老師與學生都要覆核</b>才可用。③ 不要把同學姓名、成績等個資貼進提示詞。
+  </div>
+</section>
+
+<!-- ================= 9 ================= -->
+<section class="sec" id="s9">
+  <h2><span class="num">9</span>讓本地模型參與教學：提示詞集</h2>
+  <p class="lead">以下提示詞都在本機執行，可直接複製到 OpenCode 使用。括號內標示建議使用的模型。</p>
+
+  <h3>9.1 生成學習單（Flint40B）</h3>
+  <pre class="code"><code>你是國小四年級的自然科老師。請設計一張「月亮觀測學習單」，包含：
+1. 5 個觀測步驟（每步 20 字以內）
+2. 一個要學生畫月相的圓形框說明
+3. 3 個引導式問題（例如：你發現月亮的形狀有什麼變化？）
+4. 一個給家長簽名的欄位
+全部使用繁體中文（台灣用語），語氣親切、難度適合四年級。</code></pre>
+
+  <h3>9.2 出題與答案（Flint40B）</h3>
+  <pre class="code"><code>請出 5 題關於月相的選擇題，條件：
+- 四年級程度，每題 4 個選項
+- 涵蓋：月球是否發光、月相成因、上弦月與滿月的差別
+- 附答案與一句解釋
+- 全部使用繁體中文</code></pre>
+
+  <h3>9.3 檢查與校對（Beam）</h3>
+  <pre class="code"><code>請檢查下面這段學生觀測心得：
+1. 列出錯別字與標點問題
+2. 指出語意不通的句子
+3. 只給修改建議，不要整段改寫
+4. 用繁體中文回答
+
+（貼上學生文字）</code></pre>
+
+  <h3>9.4 分析 14 天觀測紀錄（Flint40B）</h3>
+  <pre class="code"><code>以下是四年級學生 14 天的月亮觀測紀錄（CSV）。請：
+1. 整理成表格
+2. 找出形狀變化的規律（由哪一天開始由圓變缺？）
+3. 標出可能的紀錄錯誤（例如亮面方向與農曆日期矛盾）
+4. 最後用三年級學生聽得懂的話寫 100 字摘要
+請注意：只根據我給的資料分析，不確定的地方標「請老師確認」。
+
+日期,農曆,時間,天氣,方位,形狀,高度
+11/01,初一,20:00,晴,西方,看不見,低
+11/02,初二,20:00,晴,西方,細細一條,低
+11/03,初三,20:00,晴,西方,細月牙,低
+11/04,初四,20:00,多雲,西方,月牙,中
+11/07,初七,20:00,晴,南方,右半邊亮,高
+11/11,十一,20:00,晴,東方,大半圓,高
+11/15,十五,20:00,晴,東方,圓形,高
+11/19,十九,20:00,晴,西方,大半圓,高
+11/23,廿三,20:00,晴,南方,左半邊亮,高</code></pre>
+
+  <h3>9.5 家長通知（Flint40B 寫 → Beam 校對）</h3>
+  <pre class="code"><code># 步驟一（Flint40B）
+請幫我寫一則給四年級家長的班級通知，內容包含：
+觀測期間（14 天）、每天晚上 8 點觀察月亮 5 分鐘、
+需要家長陪同注意安全、如何填寫記錄表、交件日期。
+語氣友善、150 字以內、繁體中文。
+
+# 步驟二（Beam）
+請檢查上面的通知有無錯字、語氣不當或資訊不清楚之處，列出修改建議。</code></pre>
+
+  <h3>9.6 批量執行（指令列）</h3>
+  <pre class="code"><code># 用 Beam 快速檢查多份檔案
+opencode run --model ollama/beam "檢查 records/ 目錄下所有檔案的錯別字，輸出成 report.md"
+
+# 用 Flint40B 生成教材
+opencode run --model ollama/flint40b "幫我寫一份月相單元的教案，輸出到 lesson-plan.md"</code></pre>
+
+  <div class="callout c-warn">
+    <b class="tag">⚠ 本地模型的三個限制</b>
+    ① 可能<b>幻覺</b>：引用的科學數據、日期要人工核對。② 可能<b>忘記規則</b>：長對話後會忽略 <code>teaching-rules.md</code> 的要求，重要規則請在提示詞裡再講一次。③ 可能<b>速度慢</b>：40B 級模型在普通筆電上每秒可能只有幾個字，這是正常現象，可改用 Beam 處理簡短任務。
+  </div>
+</section>
+
+<!-- ================= 10 ================= -->
+<section class="sec" id="s10">
+  <h2><span class="num">10</span>離線使用與隱私</h2>
+  <p class="lead">這套架構最大的價值：教室裡沒有網路也能用，學生資料不外流。</p>
+
+  <h3>何時需要網路？</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>階段</th><th>需要網路？</th><th>說明</th></tr></thead>
+      <tbody>
+        <tr><td>安裝 OpenCode、Ollama</td><td>✅ 需要</td><td>建議在有網路的環境先裝好</td></tr>
+        <tr><td>下載模型（ollama pull）</td><td>✅ 需要</td><td>40B 級模型可能 20 GB 以上，可先下載</td></tr>
+        <tr><td>日常對話、出題、檢查作業</td><td>❌ 不需要</td><td>全部在本機 127.0.0.1 完成</td></tr>
+        <tr><td>閱讀本教材（這個 HTML）</td><td>❌ 不需要</td><td>圖片全內嵌，離線完整顯示</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>離線環境的建議設定</h3>
+  <pre class="code"><code>{
+  "$schema": "https://opencode.ai/config.json",
+  "update": "disable",
+  "model": "ollama/flint40b"
+}</code></pre>
+  <p class="muted">把 <code>update</code> 設為 <code>disable</code> 可關閉更新檢查，避免離線環境反覆嘗試連線。若只想在安裝時知道有更新，可改用 <code>"notify"</code>。</p>
+
+  <h3>校園網路注意事項</h3>
+  <ul>
+    <li>學校代理伺服器（proxy）可能擋住安裝腳本 → 先在家中或機房裝好，再把安裝檔與模型檔搬進校內。</li>
+    <li>模型檔可直接複製：Ollama 的模型存放在本機資料目錄，整台電腦搬移時一併備份即可。</li>
+    <li>建議在專案資料夾保留一份 <code>opencode.jsonc</code> 與 <code>Modelfile</code>，換機器時可快速重建。</li>
+  </ul>
+
+  <div class="callout c-tip">
+    <b class="tag">💡 隱私三原則</b>
+    ① 學生個資（姓名、成績、照片）不進提示詞。② 觀測紀錄用代號（學生 A、B）代替真名。③ 所有對話都在本機，不會離開這台電腦；但<b>請仍遵守學校個資處理規範</b>。
+  </div>
+</section>
+
+<!-- ================= 11 ================= -->
+<section class="sec" id="s11">
+  <h2><span class="num">11</span>常見問題與排錯</h2>
+  <p class="lead">照著「先看症狀 → 找對應章節」的順序處理，九成問題都在這章解決。</p>
+
+  <figure>
+    <svg viewBox="0 0 960 340" role="img" aria-label="排錯決策樹">
+      <rect width="960" height="340" rx="14" fill="#f8fafc"/>
+
+      <rect x="370" y="18" width="220" height="62" rx="12" fill="#eef4ff" stroke="#2f6fed" stroke-width="2.5"/>
+      <text x="480" y="45" text-anchor="middle" font-size="16.5" font-weight="700" fill="#12306b" font-family="sans-serif">OpenCode 跑不起來？</text>
+      <text x="480" y="68" text-anchor="middle" font-size="13" fill="#2f6fed" font-family="sans-serif">先看是哪一種症狀</text>
+
+      <path d="M480 82 V 108 H 170 V 132" fill="none" stroke="#64748b" stroke-width="2.5" marker-end="url(#ar)"/>
+      <path d="M480 82 V 132" fill="none" stroke="#64748b" stroke-width="2.5" marker-end="url(#ar)"/>
+      <path d="M480 82 V 108 H 790 V 132" fill="none" stroke="#64748b" stroke-width="2.5" marker-end="url(#ar)"/>
+
+      <rect x="40" y="138" width="260" height="96" rx="10" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>
+      <text x="170" y="170" text-anchor="middle" font-size="14.5" font-weight="700" fill="#0f172a" font-family="sans-serif">① command not found</text>
+      <text x="170" y="196" text-anchor="middle" font-size="13" fill="#475569" font-family="sans-serif">終端機說找不到 opencode</text>
+      <text x="170" y="220" text-anchor="middle" font-size="13" fill="#2f6fed" font-family="sans-serif">→ 重開終端機 / 檢查 PATH</text>
+
+      <rect x="350" y="138" width="260" height="96" rx="10" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>
+      <text x="480" y="170" text-anchor="middle" font-size="14.5" font-weight="700" fill="#0f172a" font-family="sans-serif">② /models 看不到模型</text>
+      <text x="480" y="196" text-anchor="middle" font-size="13" fill="#475569" font-family="sans-serif">清單裡沒有 flint40b / beam</text>
+      <text x="480" y="220" text-anchor="middle" font-size="13" fill="#2f6fed" font-family="sans-serif">→ ollama serve、ollama list</text>
+
+      <rect x="660" y="138" width="260" height="96" rx="10" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>
+      <text x="790" y="170" text-anchor="middle" font-size="14.5" font-weight="700" fill="#0f172a" font-family="sans-serif">③ 有模型但沒回應</text>
+      <text x="790" y="196" text-anchor="middle" font-size="13" fill="#475569" font-family="sans-serif">送出訊息後卡住或報錯</text>
+      <text x="790" y="220" text-anchor="middle" font-size="13" fill="#2f6fed" font-family="sans-serif">→ opencode service status</text>
+
+      <line x1="170" y1="236" x2="170" y2="262" stroke="#64748b" stroke-width="2.5" marker-end="url(#ar)"/>
+      <line x1="480" y1="236" x2="480" y2="262" stroke="#64748b" stroke-width="2.5" marker-end="url(#ar)"/>
+      <line x1="790" y1="236" x2="790" y2="262" stroke="#64748b" stroke-width="2.5" marker-end="url(#ar)"/>
+
+      <rect x="40" y="268" width="260" height="52" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+      <text x="170" y="300" text-anchor="middle" font-size="13.5" fill="#14532d" font-family="sans-serif">重裝，或把 bin 加入 PATH</text>
+
+      <rect x="350" y="268" width="260" height="52" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+      <text x="480" y="300" text-anchor="middle" font-size="13.5" fill="#14532d" font-family="sans-serif">確認 /api/tags 有列出模型</text>
+
+      <rect x="660" y="268" width="260" height="52" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+      <text x="790" y="300" text-anchor="middle" font-size="13.5" fill="#14532d" font-family="sans-serif">opencode --standalone 測試</text>
+    </svg>
+    <figcaption>圖 6｜排錯決策樹：先分清楚是「安裝問題」「模型問題」還是「服務問題」。</figcaption>
+  </figure>
+
+  <h3>症狀對照表</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>症狀</th><th>可能原因</th><th>處理方式</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>opencode: command not found</code></td>
+          <td>安裝完成但終端機還沒重新載入 PATH</td>
+          <td>關閉並重開終端機；仍不行則確認安裝方式與 PATH 設定（第 3 章）</td>
+        </tr>
+        <tr>
+          <td><code>No model is available for session</code></td>
+          <td>目前沒有任何可選模型</td>
+          <td>確認 Ollama 已啟動、模型已 pull，再用 <code>/models</code> 選一次</td>
+        </tr>
+        <tr>
+          <td><code>/models</code> 清單裡沒有 flint40b / beam</td>
+          <td>引擎未啟動、模型名稱不符、或模型只有 embedding 能力</td>
+          <td><code>ollama serve</code> → <code>ollama list</code> 核對名稱 → <code>curl http://127.0.0.1:11434/api/tags</code> 確認有列出</td>
+        </tr>
+        <tr>
+          <td>送出訊息後一直沒回應</td>
+          <td>背景服務卡住</td>
+          <td><code>opencode service status</code> 檢查 → <code>opencode service restart</code> → 仍不行用 <code>opencode --standalone</code> 隔離測試</td>
+        </tr>
+        <tr>
+          <td>回應非常慢</td>
+          <td>40B 級模型對硬體要求高</td>
+          <td>改用 <code>ollama/beam</code>；或改用更小量化版本；關閉其他大型程式釋放記憶體</td>
+        </tr>
+        <tr>
+          <td>回應出現「記憶體不足」或直接當機</td>
+          <td>RAM / VRAM 不足以容納模型</td>
+          <td>改用量化更低（檔案更小）的模型，或只跑 Beam</td>
+        </tr>
+        <tr>
+          <td>模型回了簡體中文</td>
+          <td>未要求繁體中文</td>
+          <td>提示詞開頭加「請全程使用繁體中文（台灣用語）」；或寫進 <code>teaching-rules.md</code></td>
+        </tr>
+        <tr>
+          <td>模型不會呼叫工具（不讀寫檔案）</td>
+          <td>模型不支援工具呼叫</td>
+          <td>確認模型設定的 <code>capabilities.tools</code> 如實；不支援時改用 <code>opencode run</code> 純對話，或由你手動複製貼上</td>
+        </tr>
+        <tr>
+          <td>改了設定沒反應</td>
+          <td>檔案名稱打錯（應為 opencode.json / opencode.jsonc）</td>
+          <td>確認檔名與 JSON 語法；在 TUI 輸入 <code>/reload</code> 強制重載</td>
+        </tr>
+        <tr>
+          <td>還是找不到原因</td>
+          <td>需要日誌</td>
+          <td>看 <code>~/.local/share/opencode/log/opencode.log</code>，或以 <code>OPENCODE_LOG_LEVEL=DEBUG opencode</code> 重跑一次</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>除錯常用指令</h3>
+  <pre class="term"><span class="ps">$</span> opencode service status
+<span class="out">（檢查背景服務是否健康）</span>
+
+<span class="ps">$</span> opencode service restart
+<span class="out">（重啟背景服務；設定變更通常不需要這一步）</span>
+
+<span class="ps">$</span> opencode api get /api/info
+<span class="out">（直接探測服務 API 是否有回應）</span>
+
+<span class="ps">$</span> opencode --standalone
+<span class="out">（用私有伺服器啟動，用來隔離「共享服務」的問題）</span></pre>
+  <p class="muted">日誌位置：<code>~/.local/share/opencode/log/opencode.log</code>（可用 <code>role=cli</code> / <code>role=server</code> 過濾）。除錯完成前，<b>不要刪除或修改資料庫與服務設定檔</b>。</p>
+</section>
+
+<!-- ================= 12 ================= -->
+<section class="sec" id="s12">
+  <h2><span class="num">12</span>完成檢核清單</h2>
+  <p class="lead">全部打勾，就代表你已經「從安裝一路做到跑通」。</p>
+
+  <div class="grid2">
+    <div class="mini">
+      <h4>環境安裝</h4>
+      <ul class="check">
+        <li><code>opencode --version</code> 有版本號</li>
+        <li>Ollama 已啟動（<code>/api/tags</code> 有回應）</li>
+        <li><code>ollama list</code> 看得到 Flint40B</li>
+        <li><code>ollama list</code> 看得到 Beam</li>
+        <li>兩個模型都能 <code>ollama run</code> 並回中文</li>
+      </ul>
+    </div>
+    <div class="mini">
+      <h4>OpenCode 設定</h4>
+      <ul class="check">
+        <li>專案內有 <code>opencode.jsonc</code></li>
+        <li><code>model</code> 指向 <code>ollama/flint40b</code></li>
+        <li>已註冊 <code>beam-assist</code> 子代理（model 為 <code>ollama/beam</code>）</li>
+        <li><code>/models</code> 同時看得到兩個模型</li>
+        <li><code>update</code> 依需求設為 <code>disable</code>（離線環境）</li>
+      </ul>
+    </div>
+    <div class="mini">
+      <h4>跑通驗證</h4>
+      <ul class="check">
+        <li>TUI 提問能得到繁體中文回答</li>
+        <li><code>opencode run "..."</code> 正常</li>
+        <li><code>opencode run --model ollama/beam "..."</code> 正常</li>
+        <li>子代理 <code>beam-assist</code> 可被呼叫</li>
+        <li>斷網後仍能正常對話</li>
+      </ul>
+    </div>
+    <div class="mini">
+      <h4>教學準備</h4>
+      <ul class="check">
+        <li>已排定 5 節課與 14 晚觀測時程</li>
+        <li>記錄表已列印（第 8.6 節）</li>
+        <li>安全事項已向學生與家長宣導</li>
+        <li>至少試過 3 條提示詞（第 9 章）</li>
+        <li>已訂定 AI 使用規範並告知學生</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout c-tip">
+    <b class="tag">🎉 完成後的建議下一步</b>
+    把每週的觀測紀錄存成 CSV 放進專案資料夾，讓模型定期幫你整理班級趨勢；也可以請學生自己寫提示詞，體驗「下指令 → 本機運算 → 檢查結果」的完整循環。
+  </div>
+</section>
+
+<!-- ================= 附錄 A ================= -->
+<section class="sec" id="a1">
+  <h2><span class="num">A</span>附錄：完整設定範例</h2>
+
+  <h3>A-1 以 Ollama 為例（推薦）</h3>
+  <p class="file-label">📁 opencode.jsonc</p>
+  <pre class="code"><code>{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "ollama/flint40b",
+  "update": "disable",
+  "providers": {
+    "ollama": {
+      "settings": {
+        "baseURL": "http://127.0.0.1:11434/v1"
+      }
+    }
+  },
+  "agents": {
+    "beam-assist": {
+      "description": "使用 Beam 進行檢查、出題與摘要的子代理",
+      "mode": "subagent",
+      "model": "ollama/beam"
+    }
+  },
+  "instructions": ["teaching-rules.md"]
+}</code></pre>
+
+  <h3>A-2 自建 / LM Studio 等 OpenAI 相容伺服器</h3>
+  <p>當模型不是由 Ollama 提供時，自己宣告 provider 與模型（把 <code>baseURL</code> 換成你的位址）：</p>
+  <pre class="code"><code>{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "local/flint40b",
+  "update": "disable",
+  "providers": {
+    "local": {
+      "name": "本地伺服器",
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "http://127.0.0.1:1234/v1"
+      },
+      "models": {
+        "flint40b": {
+          "name": "Flint40B（第一模型）",
+          "modelID": "flint40b",
+          "limit": { "context": 32768, "output": 4096 }
+        },
+        "beam": {
+          "name": "Beam（第二模型）",
+          "modelID": "beam",
+          "limit": { "context": 16384, "output": 2048 }
+        }
+      }
+    }
+  },
+  "agents": {
+    "beam-assist": {
+      "description": "使用 Beam 進行檢查的子代理",
+      "mode": "subagent",
+      "model": "local/beam"
+    }
+  }
+}</code></pre>
+  <p class="muted">重點：<code>models</code> 的<b>鍵名</b>（flint40b、beam）才是 OpenCode 裡的模型 ID，<code>modelID</code> 才是送去伺服器的名稱。兩者不同時要分清楚。<code>limit</code> 請依模型實際 context 設定。</p>
+
+  <h3>A-3 建議的專案資料夾結構</h3>
+  <pre class="code"><code>moon-class/
+├── opencode.jsonc        # OpenCode 設定（預設模型、子代理）
+├── teaching-rules.md     # 給模型的長期規定（繁體中文、四年級程度）
+├── Modelfile             # （選用）匯入 GGUF 模型時使用
+├── records/
+│   └── 觀測紀錄.csv      # 學生 14 天觀測資料
+├── output/
+│   ├── 學習單.md         # Flint40B 生成
+│   └── 校對報告.md       # Beam 生成
+└── README.md             # 記錄給下一位老師的交接說明</code></pre>
+</section>
+
+<!-- ================= 附錄 B ================= -->
+<section class="sec" id="a2">
+  <h2><span class="num">B</span>附錄：術語表</h2>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>名詞</th><th>白話解釋</th></tr></thead>
+      <tbody>
+        <tr><td>OpenCode</td><td>裝在終端機裡的開源 AI 助理，負責理解你的指令並呼叫模型</td></tr>
+        <tr><td>TUI</td><td>終端機圖形介面（Terminal UI），在文字終端機裡的操作畫面</td></tr>
+        <tr><td>CLI</td><td>命令列介面，例如 <code>opencode run "..."</code></td></tr>
+        <tr><td>本地推理引擎</td><td>把模型跑在自己電腦上的伺服器，如 Ollama、LM Studio、vLLM</td></tr>
+        <tr><td>Flint40B</td><td>本教材的<b>第一模型</b>（主力）：生成學習單、解釋概念</td></tr>
+        <tr><td>Beam</td><td>本教材的<b>第二模型</b>（快速）：檢查錯別字、核對答案</td></tr>
+        <tr><td>量化（Quantization）</td><td>把模型參數用較少位元表示，檔案變小、速度變快，品質略降</td></tr>
+        <tr><td>GGUF</td><td>常見的本機模型檔案格式，可用 Modelfile 匯入 Ollama</td></tr>
+        <tr><td>provider</td><td>OpenCode 中「模型供應者」的設定區塊</td></tr>
+        <tr><td>model ID</td><td>模型的識別字串，格式為 <code>供應者/模型名</code>，例如 <code>ollama/flint40b</code></td></tr>
+        <tr><td>子代理（subagent）</td><td>由主對話呼叫、擁有自己模型設定的分身代理，例如 <code>beam-assist</code></td></tr>
+        <tr><td>幻覺（Hallucination）</td><td>模型一本正經地說出錯誤內容，因此 AI 輸出一定要人工覆核</td></tr>
+        <tr><td>月相</td><td>從地球看到月球被太陽照亮部分的不同形狀</td></tr>
+        <tr><td>朔望月</td><td>月相循環一次約 29.5 天</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout c-info">
+    <b class="tag">📎 本教材的離線保證</b>
+    本 HTML 檔案<b>不引用任何外部圖片、字體、腳本或 CDN</b>；所有插圖皆為內嵌 SVG，所有樣式皆為內嵌 CSS。斷網狀態下雙擊開啟即可完整閱讀與列印。
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <b>國小四年級月亮觀測教學 × OpenCode 本地模型（Flint40B ＋ Beam）</b><br>
+  單一自包含 HTML 教材 · 圖片全內嵌 · 離線可顯示 · 繁體中文<br>
+  模型名稱請以 <code style="color:#7ef0a0">ollama list</code> 與 <code style="color:#7ef0a0">/models</code> 清單顯示為準
+</footer>
+
+</body>
+</html>
